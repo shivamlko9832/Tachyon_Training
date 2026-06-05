@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>React Router Demo</title>
+  <script crossorigin src="https://cdn.jsdelivr.net/npm/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.development.js"></script>
+  <script crossorigin src="https://cdn.jsdelivr.net/npm/react-router-dom@5.3.4/umd/react-router-dom.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; }
+    .layout { display: flex; min-height: 100vh; }
+    nav { width: 220px; background: #f3f4f6; padding: 1rem; }
+    nav a { display: block; margin-bottom: 0.8rem; color: #111827; text-decoration: none; }
+    nav a.active { font-weight: bold; color: #2563eb; }
+    main { padding: 1.5rem; flex: 1; }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <div style="padding: 1.5rem;">
+      Loading React Router demo...
+    </div>
+  </div>
+
+  <script type="text/babel">
+    const rootElement = document.getElementById("root");
+
+    if (!window.React || !window.ReactDOM || !window.ReactRouterDOM) {
+      rootElement.innerHTML = `
+        <div style="padding: 1.5rem; font-family: Arial, sans-serif;">
+          <h2>Unable to load React libraries</h2>
+          <p>The page is not blank now: one or more external CDN scripts did not load.</p>
+          <p>Please check internet/firewall and refresh, or run with a bundled React setup.</p>
+        </div>
+      `;
+      throw new Error("React CDN libraries failed to load.");
+    }
+
+    const { HashRouter, NavLink, Switch, Route } = ReactRouterDOM;
+
+    const Home = () => (
+      <section>
+        <h2>Home Page</h2>
+        <p>Welcome to the React Router demo app.</p>
+      </section>
+    );
+
+    const About = () => (
+      <section>
+        <h2>About Page</h2>
+        <p>This page explains how client-side routing works in React.</p>
+      </section>
+    );
+
+    const Contact = () => (
+      <section>
+        <h2>Contact Page</h2>
+        <p>You can reach us at contact@tachyon.example.</p>
+      </section>
+    );
+
+    function App() {
+      return (
+        <HashRouter>
+          <div className="layout">
+            <nav>
+              <h3>Navigation</h3>
+              <NavLink to="/">Home</NavLink>
+              <NavLink to="/about">About</NavLink>
+              <NavLink to="/contact">Contact</NavLink>
+            </nav>
+            <main>
+              <Switch>
+                <Route exact path="/" component={Home} />
+                <Route path="/about" component={About} />
+                <Route path="/contact" component={Contact} />
+              </Switch>
+            </main>
+          </div>
+        </HashRouter>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>

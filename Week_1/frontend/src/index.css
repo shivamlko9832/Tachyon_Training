@@ -1,0 +1,171 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #090e1a;
+  --bg-secondary: #0f172a;
+  --bg-card: #111827;
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-glow: rgba(74, 222, 128, 0.3);
+  --volt-green: #4ade80;
+  --volt-amber: #fbbf24;
+  --volt-blue: #60a5fa;
+  --text-primary: #f1f5f9;
+  --text-muted: #64748b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'DM Sans', sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(74, 222, 128, 0.2); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(74, 222, 128, 0.4); }
+
+/* Card glass effect */
+.card-glass {
+  background: rgba(17, 24, 39, 0.8);
+  border: 1px solid var(--border-subtle);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.card-glass:hover {
+  border-color: rgba(74, 222, 128, 0.15);
+  transition: border-color 0.3s ease;
+}
+
+/* Glow effects */
+.glow-green {
+  box-shadow: 0 0 20px rgba(74, 222, 128, 0.15), 0 0 60px rgba(74, 222, 128, 0.05);
+}
+
+.glow-amber {
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.15), 0 0 60px rgba(251, 191, 36, 0.05);
+}
+
+/* Animated gradient orbs */
+.orb {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.12;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Gauge arc animation */
+@keyframes gaugeIn {
+  from { stroke-dashoffset: 220; }
+  to { stroke-dashoffset: var(--dash-offset); }
+}
+
+.gauge-arc {
+  animation: gaugeIn 1.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Number counter animation */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-up {
+  animation: fadeUp 0.5s ease forwards;
+}
+
+/* Pulse dot */
+@keyframes pulseDot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.6; }
+}
+
+.pulse-dot {
+  animation: pulseDot 2s ease-in-out infinite;
+}
+
+/* Status badge */
+.status-exporting { color: #4ade80; }
+.status-importing { color: #f87171; }
+.status-balanced { color: #60a5fa; }
+
+/* Recharts custom */
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: rgba(17, 24, 39, 0.95) !important;
+  border: 1px solid rgba(74, 222, 128, 0.2) !important;
+  border-radius: 8px !important;
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 13px !important;
+}
+
+/* Toggle switch */
+.toggle-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.toggle-switch input { display: none; }
+
+.toggle-track {
+  width: 44px;
+  height: 24px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.toggle-track::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  background: #64748b;
+  border-radius: 50%;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.toggle-switch input:checked + .toggle-track {
+  background: rgba(74, 222, 128, 0.2);
+  border-color: rgba(74, 222, 128, 0.4);
+}
+
+.toggle-switch input:checked + .toggle-track::after {
+  left: 23px;
+  background: #4ade80;
+  box-shadow: 0 0 8px rgba(74, 222, 128, 0.6);
+}
+
+/* Sidebar link active */
+.nav-link-active {
+  background: rgba(74, 222, 128, 0.08);
+  color: #4ade80;
+  border-right: 2px solid #4ade80;
+}
+
+/* Progress bar */
+@keyframes progressFill {
+  from { width: 0; }
+  to { width: var(--progress-width); }
+}
+
+.progress-fill {
+  animation: progressFill 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}

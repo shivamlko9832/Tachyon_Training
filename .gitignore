@@ -1,0 +1,27 @@
+# Python virtual environments
+venv/
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Environment files
+.env
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Node dependencies
+node_modules/
+
+# Backend packaged dependencies
+package/
+
+# Build outputs
+dist/
+build/
+
+# OS files
+.DS_Store
+Thumbs.db
