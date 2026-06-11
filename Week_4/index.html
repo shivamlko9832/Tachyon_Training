@@ -1,0 +1,2089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VoltStream — AWS Deployment Documentation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0b0e;
+    --bg2: #111318;
+    --bg3: #181c22;
+    --bg4: #1f2430;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #9ba3b8;
+    --text3: #616a82;
+    --accent: #00d4aa;
+    --accent2: #0099ff;
+    --accent3: #f59e0b;
+    --accent4: #ef4444;
+    --accent5: #8b5cf6;
+    --green: #00d4aa;
+    --blue: #0099ff;
+    --yellow: #f59e0b;
+    --red: #ef4444;
+    --purple: #8b5cf6;
+    --mono: 'IBM Plex Mono', monospace;
+    --display: 'Syne', sans-serif;
+    --body: 'Inter', sans-serif;
+    --radius: 10px;
+    --radius-lg: 16px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--body);
+    font-size: 15px;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    width: 240px; height: 100vh;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar-brand {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .logo-icon {
+    width: 34px; height: 34px;
+    background: linear-gradient(135deg, var(--green), var(--blue));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+
+  .logo-text {
+    font-family: var(--display);
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+
+  .logo-text span { color: var(--green); }
+
+  .sidebar-meta {
+    font-size: 11px;
+    color: var(--text3);
+    line-height: 1.5;
+  }
+
+  .sidebar-nav { padding: 16px 0; flex: 1; }
+
+  .nav-group-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text3);
+    padding: 12px 20px 6px;
+  }
+
+  .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 20px;
+    font-size: 13px;
+    color: var(--text2);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+  }
+
+  .nav-link:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+  .nav-link.active {
+    color: var(--green);
+    border-left-color: var(--green);
+    background: rgba(0, 212, 170, 0.06);
+  }
+
+  .nav-link .num {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    min-width: 18px;
+  }
+
+  /* ── STATUS BADGE ── */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-family: var(--mono);
+  }
+
+  .status-live { background: rgba(0,212,170,0.12); color: var(--green); border: 1px solid rgba(0,212,170,0.2); }
+  .status-ok { background: rgba(0,212,170,0.12); color: var(--green); border: 1px solid rgba(0,212,170,0.2); }
+  .status-warn { background: rgba(245,158,11,0.12); color: var(--yellow); border: 1px solid rgba(245,158,11,0.2); }
+
+  .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  .dot-green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .dot-yellow { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* ── MAIN ── */
+  .main {
+    margin-left: 240px;
+    min-height: 100vh;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 56px 64px 48px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(0,212,170,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; left: 30%;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(0,153,255,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--green);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  .hero-title {
+    font-family: var(--display);
+    font-size: 46px;
+    font-weight: 700;
+    letter-spacing: -1.5px;
+    line-height: 1.05;
+    margin-bottom: 16px;
+  }
+
+  .hero-title .vs { color: var(--green); }
+
+  .hero-sub {
+    font-size: 16px;
+    color: var(--text2);
+    max-width: 520px;
+    margin-bottom: 28px;
+    line-height: 1.6;
+  }
+
+  .hero-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 32px;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 12px;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 20px;
+    font-size: 12px;
+    color: var(--text2);
+    font-family: var(--mono);
+  }
+
+  .chip .ci { color: var(--accent2); }
+  .chip .cg { color: var(--green); }
+
+  .hero-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+    margin-top: 32px;
+    padding-top: 28px;
+    border-top: 1px solid var(--border);
+  }
+
+  .meta-item { }
+  .meta-label { font-size: 11px; color: var(--text3); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+  .meta-val { font-size: 13px; color: var(--text); font-family: var(--mono); }
+  .meta-val a { color: var(--blue); text-decoration: none; }
+  .meta-val a:hover { text-decoration: underline; }
+
+  /* ── CONTENT ── */
+  .content { padding: 0 64px 80px; }
+
+  /* ── SECTION ── */
+  .section {
+    padding-top: 64px;
+    border-top: 1px solid var(--border);
+    margin-top: 64px;
+  }
+
+  .section:first-child { border-top: none; margin-top: 0; padding-top: 56px; }
+
+  .section-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .section-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text3);
+    padding-top: 6px;
+    min-width: 28px;
+  }
+
+  .section-title-wrap { flex: 1; }
+
+  .section-title {
+    font-family: var(--display);
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 6px;
+  }
+
+  .section-desc { font-size: 14px; color: var(--text2); }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-family: var(--mono);
+    margin-bottom: 16px;
+  }
+
+  /* ── GRID ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+
+  /* ── STAT CARD ── */
+  .stat-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+
+  .stat-label { font-size: 11px; color: var(--text3); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 8px; }
+  .stat-val { font-size: 22px; font-weight: 600; font-family: var(--display); margin-bottom: 4px; }
+  .stat-sub { font-size: 12px; color: var(--text3); }
+
+  /* ── TABLE ── */
+  .doc-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-bottom: 24px;
+  }
+
+  .doc-table th {
+    text-align: left;
+    padding: 10px 14px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text3);
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+  }
+
+  .doc-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    color: var(--text2);
+    line-height: 1.5;
+  }
+
+  .doc-table tr:last-child td { border-bottom: none; }
+  .doc-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .doc-table td:first-child { color: var(--text); font-weight: 500; }
+
+  /* ── CODE ── */
+  .code-block {
+    background: #0d1117;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: var(--radius);
+    padding: 20px 22px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.7;
+    color: #c9d1d9;
+    overflow-x: auto;
+    margin-bottom: 16px;
+    position: relative;
+  }
+
+  .code-block .cm { color: #8b949e; }   /* comment */
+  .code-block .ck { color: #ff7b72; }   /* keyword */
+  .code-block .cs { color: #a5d6ff; }   /* string */
+  .code-block .cf { color: #d2a8ff; }   /* function */
+  .code-block .cn { color: #79c0ff; }   /* name/constant */
+  .code-block .co { color: #ffa657; }   /* operator/param */
+
+  .code-label {
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+  }
+
+  /* ── COPY BUTTON ── */
+  .copy-btn {
+    position: absolute;
+    top: 12px; right: 12px;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    color: var(--text3);
+    font-size: 11px;
+    font-family: var(--mono);
+    padding: 4px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .copy-btn:hover { color: var(--text); background: var(--bg4); }
+
+  /* ── ENDPOINT BADGE ── */
+  .method {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 4px;
+    margin-right: 6px;
+    letter-spacing: 0.04em;
+  }
+
+  .method-get { background: rgba(0,212,170,0.12); color: var(--green); border: 1px solid rgba(0,212,170,0.2); }
+  .method-patch { background: rgba(245,158,11,0.12); color: var(--yellow); border: 1px solid rgba(245,158,11,0.2); }
+
+  .endpoint-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .endpoint-row:last-child { border-bottom: none; }
+
+  .endpoint-path {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--text);
+    flex: 1;
+  }
+
+  .endpoint-desc { font-size: 12px; color: var(--text3); margin-top: 3px; }
+
+  /* ── FLOW STEP ── */
+  .flow-steps { position: relative; }
+
+  .flow-step {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 4px;
+  }
+
+  .flow-step-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 32px;
+  }
+
+  .flow-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text3);
+    flex-shrink: 0;
+  }
+
+  .flow-line {
+    width: 1px;
+    flex: 1;
+    background: var(--border);
+    margin: 6px 0;
+    min-height: 24px;
+  }
+
+  .flow-content {
+    padding: 2px 0 28px;
+    flex: 1;
+  }
+
+  .flow-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .flow-desc {
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.6;
+  }
+
+  .flow-code {
+    margin-top: 8px;
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: #c9d1d9;
+    white-space: pre;
+    overflow-x: auto;
+  }
+
+  /* ── ALARM CARD ── */
+  .alarm-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 12px;
+  }
+
+  .alarm-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .alarm-body { flex: 1; }
+  .alarm-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+  .alarm-meta { font-size: 12px; color: var(--text3); font-family: var(--mono); }
+
+  /* ── CALLOUT ── */
+  .callout {
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    font-size: 13px;
+    margin-bottom: 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .callout-info { background: rgba(0,153,255,0.07); border: 1px solid rgba(0,153,255,0.15); }
+  .callout-warn { background: rgba(245,158,11,0.07); border: 1px solid rgba(245,158,11,0.15); }
+  .callout-success { background: rgba(0,212,170,0.07); border: 1px solid rgba(0,212,170,0.15); }
+  .callout-danger { background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.15); }
+
+  .callout-icon { font-size: 16px; padding-top: 1px; }
+  .callout-body { flex: 1; line-height: 1.6; color: var(--text2); }
+  .callout-body strong { color: var(--text); display: block; margin-bottom: 3px; font-size: 13px; }
+
+  /* ── PHASE ── */
+  .phase-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    margin-top: 32px;
+  }
+
+  .phase-badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .phase-1 { background: rgba(139,92,246,0.12); color: var(--purple); border: 1px solid rgba(139,92,246,0.2); }
+  .phase-2 { background: rgba(0,153,255,0.12); color: var(--blue); border: 1px solid rgba(0,153,255,0.2); }
+  .phase-3 { background: rgba(0,212,170,0.12); color: var(--green); border: 1px solid rgba(0,212,170,0.2); }
+  .phase-4 { background: rgba(245,158,11,0.12); color: var(--yellow); border: 1px solid rgba(245,158,11,0.2); }
+
+  .phase-title { font-size: 16px; font-weight: 600; }
+
+  /* ── FILE TREE ── */
+  .file-tree {
+    background: #0d1117;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.85;
+    color: #c9d1d9;
+  }
+
+  .ft-dir { color: var(--blue); }
+  .ft-file { color: var(--text); }
+  .ft-comment { color: #8b949e; }
+
+  /* ── ARCH DIAGRAM ── */
+  .arch-diagram {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    overflow-x: auto;
+  }
+
+  /* ── ISSUE ROW ── */
+  .issue-row {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    background: var(--bg2);
+  }
+
+  .issue-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .issue-title { font-size: 14px; font-weight: 600; }
+
+  .issue-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 10px; }
+  .issue-field-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em; font-family: var(--mono); color: var(--text3); margin-bottom: 4px; }
+  .issue-field-val { font-size: 12.5px; color: var(--text2); line-height: 1.5; }
+
+  /* ── CHECKLIST ── */
+  .checklist-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13.5px;
+  }
+
+  .checklist-item:last-child { border-bottom: none; }
+
+  .check-icon { 
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .check-done { background: rgba(0,212,170,0.15); color: var(--green); border: 1px solid rgba(0,212,170,0.3); }
+
+  .check-label { flex: 1; color: var(--text); }
+  .check-detail { font-size: 11.5px; color: var(--text3); font-family: var(--mono); margin-top: 2px; }
+
+  /* ── COST TABLE ── */
+  .cost-total { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    padding: 14px 14px;
+    background: rgba(0,212,170,0.06);
+    border: 1px solid rgba(0,212,170,0.15);
+    border-radius: var(--radius);
+    margin-top: 8px;
+  }
+
+  .cost-total-label { font-size: 14px; font-weight: 600; }
+  .cost-total-val { font-size: 22px; font-weight: 700; color: var(--green); font-family: var(--display); }
+
+  /* ── URL CARD ── */
+  .url-card {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+    text-decoration: none;
+    transition: border-color 0.15s;
+  }
+
+  .url-card:hover { border-color: rgba(0,153,255,0.3); }
+
+  .url-label { font-size: 11px; color: var(--text3); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px; }
+  .url-val { font-family: var(--mono); font-size: 12px; color: var(--blue); word-break: break-all; }
+  .url-icon { font-size: 18px; color: var(--text3); }
+
+  /* ── DEMO STEP ── */
+  .demo-step {
+    display: flex;
+    gap: 12px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    align-items: flex-start;
+  }
+
+  .demo-step:last-child { border-bottom: none; }
+  .demo-num { font-family: var(--mono); font-size: 11px; color: var(--text3); min-width: 22px; padding-top: 2px; }
+  .demo-text { font-size: 13.5px; color: var(--text2); line-height: 1.6; }
+  .demo-text strong { color: var(--text); }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg2); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 3px; }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    position: sticky;
+    top: 0;
+    background: rgba(10,11,14,0.9);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 50;
+  }
+
+  .topbar-breadcrumb {
+    font-size: 12.5px;
+    color: var(--text3);
+    font-family: var(--mono);
+  }
+
+  .topbar-breadcrumb span { color: var(--text2); }
+
+  .topbar-actions { display: flex; gap: 8px; }
+
+  .topbar-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    color: var(--text2);
+    font-size: 12px;
+    cursor: pointer;
+    text-decoration: none;
+    font-family: var(--body);
+    transition: all 0.15s;
+  }
+
+  .topbar-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+  .topbar-btn.primary { background: rgba(0,212,170,0.1); border-color: rgba(0,212,170,0.25); color: var(--green); }
+  .topbar-btn.primary:hover { background: rgba(0,212,170,0.18); }
+
+  /* ── ARCH SVG ── */
+  .arch-wrap {
+    overflow-x: auto;
+    padding: 8px 0;
+  }
+
+  /* ── MONITORING FLOW ── */
+  .mon-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    position: relative;
+    padding: 8px 0;
+  }
+
+  .mon-step {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 20px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 4px;
+    font-size: 13px;
+    transition: border-color 0.15s;
+    cursor: default;
+  }
+
+  .mon-step:hover { border-color: var(--border2); }
+
+  .mon-step-icon {
+    width: 32px; height: 32px;
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+
+  .mon-arrow {
+    text-align: center;
+    color: var(--text3);
+    font-size: 12px;
+    margin: 2px 0;
+  }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; }
+    .hero, .content { padding-left: 24px; padding-right: 24px; }
+    .topbar { padding: 12px 24px; }
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .issue-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ── TABS ── */
+  .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+
+  .tab {
+    padding: 8px 14px;
+    font-size: 12.5px;
+    color: var(--text3);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    font-family: var(--mono);
+    user-select: none;
+  }
+
+  .tab:hover { color: var(--text2); }
+  .tab.active { color: var(--green); border-bottom-color: var(--green); }
+
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; }
+
+  /* ── HIGHLIGHT ── */
+  mark { background: rgba(245,158,11,0.18); color: var(--yellow); border-radius: 3px; padding: 0 3px; }
+
+  /* ── INLINE CODE ── */
+  code {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: #79c0ff;
+  }
+
+  /* ── PROGRESS ── */
+  .progress-bar {
+    height: 4px;
+    background: var(--bg4);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 6px;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--green), var(--blue));
+  }
+
+  /* ── REGION DIVIDER ── */
+  .section-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 40px 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="logo">
+      <div class="logo-icon">⚡</div>
+      <div class="logo-text"><span>Volt</span>Stream</div>
+    </div>
+    <div class="sidebar-meta">v1.0.0 · Production Deployed<br>AWS us-east-1 · May 2026</div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-group-label">Overview</div>
+    <a href="#executive-summary" class="nav-link active"><span class="num">01</span>Executive Summary</a>
+    <a href="#project-structure" class="nav-link"><span class="num">02</span>Project Structure</a>
+
+    <div class="nav-group-label">Architecture</div>
+    <a href="#architecture" class="nav-link"><span class="num">03</span>System Architecture</a>
+    <a href="#backend" class="nav-link"><span class="num">04</span>Backend — FastAPI</a>
+    <a href="#frontend" class="nav-link"><span class="num">05</span>Frontend — React</a>
+
+    <div class="nav-group-label">Deployment</div>
+    <a href="#deployment" class="nav-link"><span class="num">06</span>Step-by-Step Deploy</a>
+    <a href="#monitoring" class="nav-link"><span class="num">07</span>Monitoring & Alarms</a>
+
+    <div class="nav-group-label">Reference</div>
+    <a href="#live-summary" class="nav-link"><span class="num">08</span>Live Summary</a>
+    <a href="#issues" class="nav-link"><span class="num">09</span>Issues & Resolutions</a>
+    <a href="#runbook" class="nav-link"><span class="num">10</span>Redeployment Runbook</a>
+    <a href="#demo" class="nav-link"><span class="num">11</span>Demo Guide</a>
+  </nav>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-breadcrumb">
+      VoltStream / <span>AWS Deployment Docs</span> / <span>v2 Final</span>
+    </div>
+    <div class="topbar-actions">
+      <span class="status-badge status-live"><span class="dot dot-green"></span> Live</span>
+      <a href="https://p0zatmquc0.execute-api.us-east-1.amazonaws.com/prod/docs" target="_blank" class="topbar-btn primary">↗ Swagger UI</a>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-eyebrow">⚡ Tachyon AIML Internship 2026 · AWS Track · Week 1</div>
+    <div class="hero-title">
+      <span class="vs">Volt</span>Stream<br>
+      Energy Intelligence Platform
+    </div>
+    <div class="hero-sub">
+      A production-grade, full-stack energy monitoring platform — serverless FastAPI on AWS Lambda, React on S3, with real-time CloudWatch monitoring and SNS email alerts.
+    </div>
+    <div class="hero-chips">
+      <span class="chip"><span class="cg">●</span> AWS Lambda</span>
+      <span class="chip"><span class="ci">●</span> API Gateway</span>
+      <span class="chip"><span class="cg">●</span> Amazon S3</span>
+      <span class="chip"><span class="ci">●</span> CloudWatch</span>
+      <span class="chip"><span class="cg">●</span> SNS Alerts</span>
+      <span class="chip"><span class="ci">●</span> FastAPI + React</span>
+    </div>
+
+    <div class="hero-meta">
+      <div class="meta-item">
+        <div class="meta-label">Author</div>
+        <div class="meta-val">Shivam Kumar</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Version</div>
+        <div class="meta-val">v1.0.0 · Final v2</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">AWS Region</div>
+        <div class="meta-val">us-east-1 (N. Virginia)</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">API Gateway ID</div>
+        <div class="meta-val">p0zatmquc0</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Lambda</div>
+        <div class="meta-val">voltstream-api</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Deployed</div>
+        <div class="meta-val">17 May 2026</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- ── SECTION 01: EXECUTIVE SUMMARY ── -->
+    <section class="section" id="executive-summary">
+      <div class="section-header">
+        <div class="section-num">01</div>
+        <div class="section-title-wrap">
+          <div class="section-title">Executive Summary</div>
+          <div class="section-desc">What was built, why, and all live deliverables</div>
+        </div>
+      </div>
+
+      <div class="callout callout-success">
+        <div class="callout-icon">✅</div>
+        <div class="callout-body">
+          <strong>Week 1 Checkpoint — Complete</strong>
+          All 5 API endpoints live (200 OK). React frontend deployed on S3. Swagger docs working. 3 CloudWatch alarms active. Email alerts configured via SNS.
+        </div>
+      </div>
+
+      <p style="color:var(--text2); margin-bottom:24px; font-size:14px; line-height:1.8;">
+        VoltStream models a real-world <strong style="color:var(--text)">Prosumer</strong> scenario — a household that both consumes electricity from the utility grid and generates solar energy via rooftop panels, selling surplus power back to the grid. The entire application was built from scratch and deployed to AWS using a fully serverless architecture. Zero servers were provisioned, zero infrastructure needs to be maintained, and the system scales automatically.
+      </p>
+
+      <!-- Live URLs -->
+      <div class="card-title" style="margin-bottom:12px;">🌐 Live Deployment URLs</div>
+      <a href="http://voltstream-frontend-764395350322.s3-website-us-east-1.amazonaws.com" target="_blank" class="url-card">
+        <div class="url-icon">🖥️</div>
+        <div>
+          <div class="url-label">Frontend</div>
+          <div class="url-val">http://voltstream-frontend-764395350322.s3-website-us-east-1.amazonaws.com</div>
+        </div>
+      </a>
+      <a href="https://p0zatmquc0.execute-api.us-east-1.amazonaws.com/prod/" target="_blank" class="url-card">
+        <div class="url-icon">⚙️</div>
+        <div>
+          <div class="url-label">API Base</div>
+          <div class="url-val">https://p0zatmquc0.execute-api.us-east-1.amazonaws.com/prod/</div>
+        </div>
+      </a>
+      <a href="https://p0zatmquc0.execute-api.us-east-1.amazonaws.com/prod/docs" target="_blank" class="url-card">
+        <div class="url-icon">📚</div>
+        <div>
+          <div class="url-label">API Docs (Swagger UI)</div>
+          <div class="url-val">https://p0zatmquc0.execute-api.us-east-1.amazonaws.com/prod/docs</div>
+        </div>
+      </a>
+
+      <!-- Stats -->
+      <div class="grid-4" style="margin-top:28px;">
+        <div class="stat-card">
+          <div class="stat-label">API Endpoints</div>
+          <div class="stat-val" style="color:var(--green)">5</div>
+          <div class="stat-sub">All 200 OK</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">CloudWatch Alarms</div>
+          <div class="stat-val" style="color:var(--blue)">3</div>
+          <div class="stat-sub">Active monitoring</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Lambda Runtime</div>
+          <div class="stat-val" style="color:var(--purple)">python3.12</div>
+          <div class="stat-sub">256 MB · 30s timeout</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Monthly Cost</div>
+          <div class="stat-val" style="color:var(--yellow)">$0.00</div>
+          <div class="stat-sub">Free tier covered</div>
+        </div>
+      </div>
+
+      <!-- Deliverables table -->
+      <div style="margin-top:28px;">
+        <div class="card-title">Full Deliverables Status</div>
+        <table class="doc-table">
+          <thead>
+            <tr><th>Deliverable</th><th>Status</th><th>Details</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>FastAPI backend on AWS Lambda</td><td><span class="status-badge status-live">LIVE</span></td><td>voltstream-api — python3.12, 256MB, 30s timeout</td></tr>
+            <tr><td>API Gateway HTTP API — 5 endpoints</td><td><span class="status-badge status-live">LIVE</span></td><td>https://p0zatmquc0.execute-api.us-east-1.amazonaws.com/prod/</td></tr>
+            <tr><td>Swagger UI API Docs</td><td><span class="status-badge status-live">LIVE</span></td><td>.../prod/docs — all 5 endpoints interactive</td></tr>
+            <tr><td>React frontend on S3</td><td><span class="status-badge status-live">LIVE</span></td><td>S3 static website with SPA routing</td></tr>
+            <tr><td>IAM execution role</td><td><span class="status-badge status-ok">ACTIVE</span></td><td>voltstream-lambda-role — CloudWatch logs only</td></tr>
+            <tr><td>CloudWatch Alarm — Lambda Errors</td><td><span class="status-badge status-ok">OK</span></td><td>Triggers when errors ≥ 5 in 5 minutes</td></tr>
+            <tr><td>CloudWatch Alarm — Lambda Duration</td><td><span class="status-badge status-warn">ACTIVE</span></td><td>Triggers when avg latency ≥ 3000ms</td></tr>
+            <tr><td>CloudWatch Alarm — Lambda Throttles</td><td><span class="status-badge status-warn">ACTIVE</span></td><td>Triggers on any throttle event</td></tr>
+            <tr><td>SNS email notifications</td><td><span class="status-badge status-ok">ACTIVE</span></td><td>shivam4maths1729@gmail.com — subscription confirmed</td></tr>
+            <tr><td>End-to-end integration test</td><td><span class="status-badge status-live">PASSED</span></td><td>All 5 endpoints return HTTP 200 OK — verified</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── SECTION 02: PROJECT STRUCTURE ── -->
+    <section class="section" id="project-structure">
+      <div class="section-header">
+        <div class="section-num">02</div>
+        <div class="section-title-wrap">
+          <div class="section-title">Project Structure</div>
+          <div class="section-desc">Complete directory layout and every file explained</div>
+        </div>
+      </div>
+
+      <p style="color:var(--text2); margin-bottom:20px; font-size:14px;">
+        VoltStream follows a clean separation of concerns — backend and frontend are completely independent codebases that communicate only through HTTP API calls.
+      </p>
+
+      <div class="file-tree">
+<span class="ft-dir">voltstream/</span>
+├── <span class="ft-dir">backend/</span>
+│   ├── <span class="ft-file">main.py</span>                  <span class="ft-comment">← FastAPI app: all routes, Pydantic models, mock data, custom /docs</span>
+│   ├── <span class="ft-file">lambda_handler.py</span>         <span class="ft-comment">← Mangum(app, lifespan="off") — bridges Lambda to FastAPI</span>
+│   ├── <span class="ft-file">requirements.txt</span>          <span class="ft-comment">← fastapi, uvicorn[standard], pydantic, mangum</span>
+│   ├── <span class="ft-file">Dockerfile</span>                <span class="ft-comment">← Container build for local Docker dev</span>
+│   └── <span class="ft-dir">package/</span>                  <span class="ft-comment">← Lambda deployment package (built via Docker at deploy time)</span>
+│
+├── <span class="ft-dir">frontend/</span>
+│   ├── <span class="ft-dir">src/</span>
+│   │   ├── <span class="ft-dir">pages/</span>
+│   │   │   ├── <span class="ft-file">LiveDashboard.jsx</span> <span class="ft-comment">← Real-time gauges, sparkline, status badge, 4s polling</span>
+│   │   │   ├── <span class="ft-file">UsageHistory.jsx</span>  <span class="ft-comment">← Bar/line charts, period toggle (daily/weekly/monthly)</span>
+│   │   │   ├── <span class="ft-file">SmartControl.jsx</span>  <span class="ft-comment">← Device cards, ON/OFF toggles, category filter</span>
+│   │   │   ├── <span class="ft-file">Invoices.jsx</span>      <span class="ft-comment">← Budget bars, billing table, alert banner</span>
+│   │   │   └── <span class="ft-file">NotFound.jsx</span>      <span class="ft-comment">← 404 fallback page</span>
+│   │   ├── <span class="ft-dir">components/</span>
+│   │   │   ├── <span class="ft-file">Sidebar.jsx</span>       <span class="ft-comment">← Navigation with active NavLink highlighting</span>
+│   │   │   ├── <span class="ft-file">StatCard.jsx</span>      <span class="ft-comment">← Reusable metric display card</span>
+│   │   │   ├── <span class="ft-file">GaugeRing.jsx</span>     <span class="ft-comment">← Animated SVG arc gauge</span>
+│   │   │   └── <span class="ft-file">LoadingSpinner.jsx</span><span class="ft-comment">← Loading animation</span>
+│   │   ├── <span class="ft-dir">hooks/</span><span class="ft-file">useFetch.js</span>     <span class="ft-comment">← useFetch + usePoll custom React hooks</span>
+│   │   ├── <span class="ft-dir">data/</span><span class="ft-file">api.js</span>           <span class="ft-comment">← Centralized API service layer</span>
+│   │   ├── <span class="ft-file">App.jsx</span>               <span class="ft-comment">← React Router config + Layout</span>
+│   │   └── <span class="ft-file">index.css</span>             <span class="ft-comment">← Tailwind + CSS variables and animations</span>
+│   ├── <span class="ft-file">.env.production</span>           <span class="ft-comment">← VITE_API_URL baked into bundle at build time</span>
+│   ├── <span class="ft-file">Dockerfile</span>                <span class="ft-comment">← Multi-stage: Node build + Nginx serve</span>
+│   ├── <span class="ft-file">nginx.conf</span>                <span class="ft-comment">← SPA routing fallback + cache headers</span>
+│   └── <span class="ft-file">package.json</span>
+│
+├── <span class="ft-file">docker-compose.yml</span>            <span class="ft-comment">← Local full-stack orchestration</span>
+├── <span class="ft-file">deploy_aws.sh</span>                 <span class="ft-comment">← Automated Lambda + API Gateway deploy</span>
+├── <span class="ft-file">deploy_aws_frontend.sh</span>        <span class="ft-comment">← Automated S3 frontend deploy</span>
+└── <span class="ft-file">README.md</span>
+      </div>
+    </section>
+
+    <!-- ── SECTION 03: ARCHITECTURE ── -->
+    <section class="section" id="architecture">
+      <div class="section-header">
+        <div class="section-num">03</div>
+        <div class="section-title-wrap">
+          <div class="section-title">System Architecture</div>
+          <div class="section-desc">AWS services, how they connect, and the complete request flow</div>
+        </div>
+      </div>
+
+      <!-- Architecture Diagram -->
+      <div class="arch-diagram">
+        <svg width="100%" viewBox="0 0 860 520" role="img">
+          <title>VoltStream AWS Architecture Diagram</title>
+          <desc>Shows the flow from browser through S3, API Gateway, Lambda, CloudWatch, and SNS</desc>
+          <defs>
+            <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </marker>
+          </defs>
+
+          <!-- User Browser -->
+          <g>
+            <rect x="30" y="220" width="100" height="64" rx="10" fill="#1a1f2e" stroke="rgba(255,255,255,0.15)" stroke-width="0.75"/>
+            <text x="80" y="246" text-anchor="middle" font-size="22" font-family="monospace">🖥️</text>
+            <text x="80" y="267" text-anchor="middle" font-size="11" fill="#9ba3b8" font-family="Inter,sans-serif" font-weight="500">Browser</text>
+            <text x="80" y="281" text-anchor="middle" font-size="10" fill="#616a82" font-family="IBM Plex Mono,monospace">User</text>
+          </g>
+
+          <!-- Arrow: Browser to S3 -->
+          <line x1="130" y1="245" x2="174" y2="245" stroke="#616a82" stroke-width="1" marker-end="url(#arr)" stroke-dasharray="4 3"/>
+          <text x="152" y="238" text-anchor="middle" font-size="9" fill="#616a82" font-family="IBM Plex Mono,monospace">HTML/JS</text>
+
+          <!-- S3 Frontend -->
+          <g>
+            <rect x="175" y="200" width="110" height="90" rx="10" fill="#0d2a1a" stroke="rgba(0,212,170,0.25)" stroke-width="0.75"/>
+            <text x="230" y="228" text-anchor="middle" font-size="20" font-family="monospace">🪣</text>
+            <text x="230" y="249" text-anchor="middle" font-size="11" fill="#e8eaf0" font-family="Inter,sans-serif" font-weight="600">Amazon S3</text>
+            <text x="230" y="264" text-anchor="middle" font-size="10" fill="#00d4aa" font-family="IBM Plex Mono,monospace">Static Website</text>
+            <text x="230" y="278" text-anchor="middle" font-size="9.5" fill="#616a82" font-family="IBM Plex Mono,monospace">React Bundle</text>
+          </g>
+
+          <!-- Arrow: Browser to API GW -->
+          <path d="M80 284 Q80 370 340 370 Q410 370 410 350" fill="none" stroke="#0099ff" stroke-width="1" marker-end="url(#arr)" stroke-dasharray="none"/>
+          <text x="220" y="388" text-anchor="middle" font-size="9" fill="#0099ff" font-family="IBM Plex Mono,monospace">fetch() HTTPS API calls</text>
+
+          <!-- API Gateway -->
+          <g>
+            <rect x="340" y="200" width="140" height="90" rx="10" fill="#0d1a2e" stroke="rgba(0,153,255,0.3)" stroke-width="0.75"/>
+            <text x="410" y="228" text-anchor="middle" font-size="20" font-family="monospace">🔀</text>
+            <text x="410" y="249" text-anchor="middle" font-size="11" fill="#e8eaf0" font-family="Inter,sans-serif" font-weight="600">API Gateway</text>
+            <text x="410" y="264" text-anchor="middle" font-size="10" fill="#0099ff" font-family="IBM Plex Mono,monospace">HTTP API</text>
+            <text x="410" y="278" text-anchor="middle" font-size="9.5" fill="#616a82" font-family="IBM Plex Mono,monospace">ANY /{proxy+}</text>
+          </g>
+
+          <!-- Arrow: API GW to Lambda -->
+          <line x1="480" y1="245" x2="540" y2="245" stroke="#0099ff" stroke-width="1.5" marker-end="url(#arr)"/>
+          <text x="510" y="238" text-anchor="middle" font-size="9" fill="#0099ff" font-family="IBM Plex Mono,monospace">invoke</text>
+
+          <!-- Lambda -->
+          <g>
+            <rect x="540" y="180" width="140" height="130" rx="10" fill="#1a1228" stroke="rgba(139,92,246,0.3)" stroke-width="0.75"/>
+            <text x="610" y="213" text-anchor="middle" font-size="20" font-family="monospace">λ</text>
+            <text x="610" y="235" text-anchor="middle" font-size="11" fill="#e8eaf0" font-family="Inter,sans-serif" font-weight="600">AWS Lambda</text>
+            <text x="610" y="252" text-anchor="middle" font-size="10" fill="#8b5cf6" font-family="IBM Plex Mono,monospace">voltstream-api</text>
+            <text x="610" y="267" text-anchor="middle" font-size="9.5" fill="#616a82" font-family="IBM Plex Mono,monospace">python3.12 · 256MB</text>
+            <rect x="558" y="278" width="104" height="20" rx="4" fill="rgba(139,92,246,0.1)" stroke="rgba(139,92,246,0.15)" stroke-width="0.5"/>
+            <text x="610" y="292" text-anchor="middle" font-size="9" fill="#8b5cf6" font-family="IBM Plex Mono,monospace">Mangum ASGI Adapter</text>
+          </g>
+
+          <!-- FastAPI inside Lambda (nested box) -->
+          <rect x="558" y="305" width="104" height="20" rx="4" fill="rgba(0,212,170,0.08)" stroke="rgba(0,212,170,0.15)" stroke-width="0.5"/>
+          <text x="610" y="319" text-anchor="middle" font-size="9" fill="#00d4aa" font-family="IBM Plex Mono,monospace">FastAPI + Pydantic</text>
+
+          <!-- Arrow: Lambda to CloudWatch -->
+          <line x1="680" y1="230" x2="740" y2="200" stroke="#f59e0b" stroke-width="1" marker-end="url(#arr)" stroke-dasharray="4 3"/>
+
+          <!-- CloudWatch -->
+          <g>
+            <rect x="740" y="140" width="110" height="90" rx="10" fill="#1a1500" stroke="rgba(245,158,11,0.25)" stroke-width="0.75"/>
+            <text x="795" y="168" text-anchor="middle" font-size="20" font-family="monospace">📊</text>
+            <text x="795" y="189" text-anchor="middle" font-size="11" fill="#e8eaf0" font-family="Inter,sans-serif" font-weight="600">CloudWatch</text>
+            <text x="795" y="204" text-anchor="middle" font-size="10" fill="#f59e0b" font-family="IBM Plex Mono,monospace">Logs + Alarms</text>
+            <text x="795" y="219" text-anchor="middle" font-size="9.5" fill="#616a82" font-family="IBM Plex Mono,monospace">3 active alarms</text>
+          </g>
+
+          <!-- Arrow: CloudWatch to SNS -->
+          <line x1="795" y1="230" x2="795" y2="290" stroke="#ef4444" stroke-width="1" marker-end="url(#arr)" stroke-dasharray="4 3"/>
+
+          <!-- SNS -->
+          <g>
+            <rect x="740" y="290" width="110" height="80" rx="10" fill="#1a0808" stroke="rgba(239,68,68,0.25)" stroke-width="0.75"/>
+            <text x="795" y="318" text-anchor="middle" font-size="20" font-family="monospace">📧</text>
+            <text x="795" y="339" text-anchor="middle" font-size="11" fill="#e8eaf0" font-family="Inter,sans-serif" font-weight="600">Amazon SNS</text>
+            <text x="795" y="355" text-anchor="middle" font-size="9.5" fill="#ef4444" font-family="IBM Plex Mono,monospace">Email Alerts</text>
+          </g>
+
+          <!-- IAM Role -->
+          <g>
+            <rect x="540" y="400" width="140" height="64" rx="10" fill="#161616" stroke="rgba(255,255,255,0.1)" stroke-width="0.75"/>
+            <text x="610" y="425" text-anchor="middle" font-size="20" font-family="monospace">🔑</text>
+            <text x="610" y="446" text-anchor="middle" font-size="11" fill="#e8eaf0" font-family="Inter,sans-serif" font-weight="600">IAM Role</text>
+            <text x="610" y="458" text-anchor="middle" font-size="9.5" fill="#616a82" font-family="IBM Plex Mono,monospace">voltstream-lambda-role</text>
+          </g>
+
+          <!-- Lambda logs to CloudWatch (vertical) -->
+          <line x1="610" y1="310" x2="610" y2="390" stroke="rgba(255,255,255,0.1)" stroke-width="0.75" marker-end="url(#arr)"/>
+
+          <!-- Legend -->
+          <rect x="30" y="420" width="260" height="80" rx="8" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.06)" stroke-width="0.5"/>
+          <text x="45" y="440" font-size="10" fill="#616a82" font-family="IBM Plex Mono,monospace" font-weight="600">LEGEND</text>
+          <line x1="45" y1="455" x2="75" y2="455" stroke="#0099ff" stroke-width="1.5"/>
+          <text x="82" y="459" font-size="10" fill="#9ba3b8" font-family="IBM Plex Mono,monospace">Request flow</text>
+          <line x1="45" y1="472" x2="75" y2="472" stroke="#616a82" stroke-width="1" stroke-dasharray="4 3"/>
+          <text x="82" y="476" font-size="10" fill="#9ba3b8" font-family="IBM Plex Mono,monospace">Static delivery</text>
+          <line x1="45" y1="489" x2="75" y2="489" stroke="#f59e0b" stroke-width="1" stroke-dasharray="4 3"/>
+          <text x="82" y="493" font-size="10" fill="#9ba3b8" font-family="IBM Plex Mono,monospace">Metrics / Alerts</text>
+
+          <!-- Labels at bottom -->
+          <text x="430" y="470" text-anchor="middle" font-size="11" fill="#616a82" font-family="IBM Plex Mono,monospace">Cold start ~400ms · Warm &lt;50ms</text>
+          <text x="430" y="488" text-anchor="middle" font-size="11" fill="#616a82" font-family="IBM Plex Mono,monospace">Payload Format 2.0 · HTTP API</text>
+        </svg>
+      </div>
+
+      <!-- AWS Services Table -->
+      <div style="margin-top:28px;">
+        <div class="card-title">AWS Services Used</div>
+        <table class="doc-table">
+          <thead><tr><th>Service</th><th>Role</th><th>Free Tier</th></tr></thead>
+          <tbody>
+            <tr><td>Amazon S3</td><td>Hosts compiled React app as static website + stores Lambda ZIP</td><td>5 GB, 20K GET/month</td></tr>
+            <tr><td>API Gateway (HTTP API)</td><td>Public HTTPS endpoint — ANY /{proxy+} routes all calls to Lambda</td><td>1M API calls/month</td></tr>
+            <tr><td>AWS Lambda</td><td>Runs FastAPI on every request via Mangum ASGI adapter</td><td>1M requests, 400K GB-s/month</td></tr>
+            <tr><td>AWS IAM</td><td>Execution role — grants Lambda CloudWatch logs permission only</td><td>Always free</td></tr>
+            <tr><td>CloudWatch Logs</td><td>Every Lambda invocation logged — errors, duration, request IDs</td><td>5 GB ingestion/month</td></tr>
+            <tr><td>CloudWatch Alarms</td><td>3 alarms monitoring Errors, Duration, Throttles metrics</td><td>10 alarms free/month</td></tr>
+            <tr><td>Amazon SNS</td><td>Email notification channel for CloudWatch alarms</td><td>1M notifications/month</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Request Flow -->
+      <div style="margin-top:28px;">
+        <div class="card-title" style="margin-bottom:20px;">Complete Request Flow</div>
+        <div class="flow-steps">
+          <div class="flow-step">
+            <div class="flow-step-left"><div class="flow-num">1</div><div class="flow-line"></div></div>
+            <div class="flow-content"><div class="flow-title">User opens the S3 website URL</div><div class="flow-desc">S3 returns <code>index.html</code> + React JS bundle — pure static delivery, no server involved.</div></div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-left"><div class="flow-num">2</div><div class="flow-line"></div></div>
+            <div class="flow-content"><div class="flow-title">React boots and starts polling</div><div class="flow-desc">Reads <code>VITE_API_URL</code> from bundle, starts polling Live Dashboard every <strong style="color:var(--text)">4 seconds</strong>.</div></div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-left"><div class="flow-num">3</div><div class="flow-line"></div></div>
+            <div class="flow-content"><div class="flow-title">fetch() sends HTTPS request</div><div class="flow-desc">GET to <code>https://p0zatmquc0.execute-api.us-east-1.amazonaws.com/prod/api/v1/dashboard/live</code></div></div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-left"><div class="flow-num">4</div><div class="flow-line"></div></div>
+            <div class="flow-content"><div class="flow-title">API Gateway invokes Lambda</div><div class="flow-desc">Matches <code>ANY /{proxy+}</code> and invokes <code>voltstream-api</code> Lambda with Payload Format 2.0 event.</div></div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-left"><div class="flow-num">5</div><div class="flow-line"></div></div>
+            <div class="flow-content"><div class="flow-title">Lambda cold-start or warm reuse</div><div class="flow-desc"><mark>~400ms first request</mark> (cold start) or <mark>&lt;50ms</mark> for subsequent requests using warm container.</div></div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-left"><div class="flow-num">6</div><div class="flow-line"></div></div>
+            <div class="flow-content"><div class="flow-title">Mangum translates event to ASGI</div><div class="flow-desc"><code>Mangum(app, lifespan="off")</code> receives the Lambda event and translates it to an ASGI HTTP scope that FastAPI understands.</div></div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-left"><div class="flow-num">7</div><div class="flow-line"></div></div>
+            <div class="flow-content"><div class="flow-title">FastAPI handles the route</div><div class="flow-desc">Matches <code>/api/v1/dashboard/live</code> to <code>get_live_dashboard()</code>, generates random solar/grid values, serializes <code>LivePowerStatus</code> model to JSON.</div></div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-left"><div class="flow-num">8</div><div class="flow-line"></div></div>
+            <div class="flow-content"><div class="flow-title">Response returns to browser</div><div class="flow-desc">API Gateway returns JSON → React re-renders gauges and sparkline in real-time.</div></div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-left"><div class="flow-num">9</div><div class="flow-line"></div></div>
+            <div class="flow-content"><div class="flow-title">CloudWatch captures metrics</div><div class="flow-desc">Logs RequestId, Duration, MemoryUsed for every invocation. If errors ≥ 5 in 5 min → alarm fires → SNS publishes → email sent.</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SECTION 04: BACKEND ── -->
+    <section class="section" id="backend">
+      <div class="section-header">
+        <div class="section-num">04</div>
+        <div class="section-title-wrap">
+          <div class="section-title">Backend — FastAPI on Lambda</div>
+          <div class="section-desc">API endpoints, Mangum adapter, custom docs fix, and packaging</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <div class="card-title">Lambda Handler</div>
+          <div class="code-label">lambda_handler.py</div>
+          <div class="code-block">
+<span class="ck">from</span> <span class="cn">mangum</span> <span class="ck">import</span> Mangum
+<span class="ck">from</span> <span class="cn">main</span> <span class="ck">import</span> app
+
+<span class="cm"># Mangum translates Lambda API Gateway events
+# to ASGI for FastAPI
+# lifespan="off" disables startup/shutdown events</span>
+handler = <span class="cf">Mangum</span>(app, lifespan=<span class="cs">"off"</span>)
+          </div>
+        </div>
+        <div>
+          <div class="card-title">The /openapi.json Fix</div>
+          <div class="callout callout-warn" style="margin-bottom:12px;">
+            <div class="callout-icon">⚠️</div>
+            <div class="callout-body">
+              <strong>Critical Issue Resolved</strong>
+              Swagger UI fetched <code>/openapi.json</code> (without <code>/prod</code> prefix) which returned 404. Fixed with custom routes.
+            </div>
+          </div>
+          <div class="code-block" style="font-size:11px;">
+app = <span class="cf">FastAPI</span>(
+    docs_url=<span class="cn">None</span>,   <span class="cm"># disable default /docs</span>
+    redoc_url=<span class="cn">None</span>,
+    openapi_url=<span class="cn">None</span>,
+)
+
+<span class="cm"># Custom routes with full /prod path</span>
+<span class="co">@app.get</span>(<span class="cs">"/docs"</span>)
+<span class="ck">def</span> <span class="cf">custom_docs</span>():
+    <span class="ck">return</span> <span class="cf">get_swagger_ui_html</span>(
+        openapi_url=<span class="cs">"/prod/openapi.json"</span>,
+    )
+          </div>
+        </div>
+      </div>
+
+      <!-- API Endpoints -->
+      <div style="margin-top:24px;">
+        <div class="card-title" style="margin-bottom:16px;">All 5 API Endpoints — Live Verified</div>
+        <div class="card">
+          <div class="endpoint-row">
+            <div>
+              <div><span class="method method-get">GET</span><span class="endpoint-path">/api/v1/dashboard/live</span></div>
+              <div class="endpoint-desc" style="margin-top:6px;">Returns live solar generation, grid draw, net usage, and export/import status</div>
+              <div class="flow-code" style="margin-top:8px;">{"grid_draw_kw":1.23,"solar_generation_kw":3.21,"net_usage_kw":-1.98,"status":"exporting"}</div>
+            </div>
+          </div>
+          <div class="endpoint-row">
+            <div>
+              <div><span class="method method-get">GET</span><span class="endpoint-path">/api/v1/analytics/history?period=daily</span></div>
+              <div class="endpoint-desc" style="margin-top:6px;">Returns 14 data points with usage_kwh, solar_kwh, and cost_usd for the selected period</div>
+              <div class="flow-code" style="margin-top:8px;">[{"label":"Mon 04","usage_kwh":27.2,"solar_kwh":18.8,"cost_usd":3.81}, ...]</div>
+            </div>
+          </div>
+          <div class="endpoint-row">
+            <div>
+              <div><span class="method method-get">GET</span><span class="endpoint-path">/api/v1/devices</span></div>
+              <div class="endpoint-desc" style="margin-top:6px;">Returns all 8 registered smart home devices with power draw and on/off state</div>
+              <div class="flow-code" style="margin-top:8px;">[{"id":"d001","name":"EV Charger","power_w":7200,"is_on":true}, ...]</div>
+            </div>
+          </div>
+          <div class="endpoint-row">
+            <div>
+              <div><span class="method method-patch">PATCH</span><span class="endpoint-path">/api/v1/devices/{id}</span></div>
+              <div class="endpoint-desc" style="margin-top:6px;">Toggle a device on/off. Returns updated device or HTTP 404 if device ID not found</div>
+            </div>
+          </div>
+          <div class="endpoint-row" style="border-bottom:none;">
+            <div>
+              <div><span class="method method-get">GET</span><span class="endpoint-path">/api/v1/billing/summary</span></div>
+              <div class="endpoint-desc" style="margin-top:6px;">Returns current balance, projected bill, budget limit, and over-budget alert flag</div>
+              <div class="flow-code" style="margin-top:8px;">{"current_balance":37.06,"projected_bill":65.4,"budget_limit":80.0,"alert":false}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SECTION 05: FRONTEND ── -->
+    <section class="section" id="frontend">
+      <div class="section-header">
+        <div class="section-num">05</div>
+        <div class="section-title-wrap">
+          <div class="section-title">Frontend — React on S3</div>
+          <div class="section-desc">Application pages, components, and S3 hosting configuration</div>
+        </div>
+      </div>
+
+      <div class="card-title" style="margin-bottom:16px;">Application Pages</div>
+      <div class="grid-2">
+        <div class="stat-card">
+          <div style="font-size:20px; margin-bottom:8px;">📊</div>
+          <div class="stat-label">/ — Live Dashboard</div>
+          <div style="font-size:13px; color:var(--text2); line-height:1.6;">Polls API every 4s. SVG GaugeRing, net kW, status badge (Exporting/Importing/Balanced), 20-point rolling AreaChart</div>
+        </div>
+        <div class="stat-card">
+          <div style="font-size:20px; margin-bottom:8px;">📈</div>
+          <div class="stat-label">/analytics — Usage History</div>
+          <div style="font-size:13px; color:var(--text2); line-height:1.6;">Daily/Weekly/Monthly toggle. BarChart usage vs solar, LineChart cost vs savings, 4 summary StatCards</div>
+        </div>
+        <div class="stat-card">
+          <div style="font-size:20px; margin-bottom:8px;">💡</div>
+          <div class="stat-label">/devices — Smart Control</div>
+          <div style="font-size:13px; color:var(--text2); line-height:1.6;">Device cards with ON/OFF toggle (PATCH endpoint). Category filter. Live power draw progress bar</div>
+        </div>
+        <div class="stat-card">
+          <div style="font-size:20px; margin-bottom:8px;">💳</div>
+          <div class="stat-label">/billing — Billing</div>
+          <div style="font-size:13px; color:var(--text2); line-height:1.6;">Budget progress bars. Auto alert banner when projected > budget. Invoice history table</div>
+        </div>
+      </div>
+
+      <div style="margin-top:24px;">
+        <div class="card-title">S3 Hosting Configuration</div>
+        <table class="doc-table">
+          <thead><tr><th>Setting</th><th>Value</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td>Index document</td><td><code>index.html</code></td><td>Serves React app on root URL access</td></tr>
+            <tr><td>Error document</td><td><code>index.html</code></td><td>SPA fallback — React Router handles all 404 paths</td></tr>
+            <tr><td>Block public access</td><td>All 4 blocks disabled</td><td>Required for static website hosting</td></tr>
+            <tr><td>JS/CSS Cache-Control</td><td><code>max-age=31536000,public,immutable</code></td><td>Cache forever — content-hashed filenames auto-invalidate</td></tr>
+            <tr><td>index.html Cache-Control</td><td><code>no-cache,no-store,must-revalidate</code></td><td>Always fresh — ensures latest app version on redeploy</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── SECTION 06: DEPLOYMENT ── -->
+    <section class="section" id="deployment">
+      <div class="section-header">
+        <div class="section-num">06</div>
+        <div class="section-title-wrap">
+          <div class="section-title">Complete Deployment — Step by Step</div>
+          <div class="section-desc">Every command executed with real output and explanation</div>
+        </div>
+      </div>
+
+      <!-- Phase 1 -->
+      <div class="phase-header">
+        <span class="phase-badge phase-1">Phase 1</span>
+        <div class="phase-title">AWS Infrastructure</div>
+      </div>
+
+      <div class="code-label">Verify AWS CLI + Create S3 Deployment Bucket</div>
+      <div class="code-block" style="position:relative;">
+<button class="copy-btn" onclick="copyCode(this)">Copy</button>
+aws sts get-caller-identity
+<span class="cm"># Output: Account: 764395350322, Arn: .../user/voltstream-admin</span>
+
+aws s3 mb s3://voltstream-deployments-764395350322 --region us-east-1
+<span class="cm"># Output: make_bucket: voltstream-deployments-764395350322</span>
+      </div>
+
+      <div class="code-label">Create IAM Execution Role</div>
+      <div class="code-block" style="position:relative;">
+<button class="copy-btn" onclick="copyCode(this)">Copy</button>
+aws iam create-role --role-name voltstream-lambda-role \
+  --assume-role-policy-document file://trust.json
+<span class="cm"># Role ARN: arn:aws:iam::764395350322:role/voltstream-lambda-role</span>
+
+aws iam attach-role-policy --role-name voltstream-lambda-role \
+  --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      </div>
+
+      <!-- Phase 2 -->
+      <div class="phase-header">
+        <span class="phase-badge phase-2">Phase 2</span>
+        <div class="phase-title">Lambda Package — Linux Build via Docker</div>
+      </div>
+
+      <div class="callout callout-warn">
+        <div class="callout-icon">⚠️</div>
+        <div class="callout-body">
+          <strong>Critical: Must use Docker for Linux-compatible binaries</strong>
+          Windows pip builds fail on Lambda with "No module named pydantic_core._pydantic_core". Build inside the AWS Lambda Docker image.
+        </div>
+      </div>
+
+      <div class="code-block" style="position:relative;">
+<button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<span class="cm"># Rebuild package with Linux x86_64 binaries</span>
+docker run --rm -v ${PWD}:/var/task --entrypoint /bin/sh \
+  public.ecr.aws/lambda/python:3.12 \
+  -c "pip install -r requirements.txt -t package"
+
+copy main.py package\
+copy lambda_handler.py package\
+cd package
+Compress-Archive -Path * -DestinationPath ..\lambda_package_fixed.zip -Force
+cd ..
+
+aws s3 cp lambda_package_fixed.zip s3://voltstream-deployments-764395350322/
+aws lambda update-function-code --function-name voltstream-api \
+  --s3-bucket voltstream-deployments-764395350322 \
+  --s3-key lambda_package_fixed.zip --region us-east-1
+      </div>
+
+      <!-- Phase 3 -->
+      <div class="phase-header">
+        <span class="phase-badge phase-3">Phase 3</span>
+        <div class="phase-title">API Gateway Configuration</div>
+      </div>
+
+      <div class="code-block" style="position:relative;">
+<button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<span class="cm"># Create the HTTP API</span>
+aws apigatewayv2 create-api --name voltstream-api-gateway \
+  --protocol-type HTTP --region us-east-1
+<span class="cm"># ApiId: p0zatmquc0</span>
+
+<span class="cm"># Create Lambda integration</span>
+aws apigatewayv2 create-integration --api-id p0zatmquc0 \
+  --integration-type AWS_PROXY \
+  --integration-uri arn:aws:lambda:us-east-1:764395350322:function:voltstream-api \
+  --payload-format-version "2.0" --region us-east-1
+<span class="cm"># IntegrationId: atjzu0f</span>
+
+<span class="cm"># Create catch-all route</span>
+aws apigatewayv2 create-route --api-id p0zatmquc0 \
+  --route-key "ANY /{proxy+}" --target "integrations/atjzu0f" --region us-east-1
+
+<span class="cm"># Create prod stage with auto-deploy</span>
+aws apigatewayv2 create-stage --api-id p0zatmquc0 \
+  --stage-name prod --auto-deploy --region us-east-1
+
+<span class="cm"># Grant API Gateway permission to invoke Lambda</span>
+aws lambda add-permission --function-name voltstream-api \
+  --statement-id apigateway-invoke --action lambda:InvokeFunction \
+  --principal apigateway.amazonaws.com \
+  --source-arn "arn:aws:execute-api:us-east-1:764395350322:p0zatmquc0/*/*"
+      </div>
+
+      <!-- Phase 4 -->
+      <div class="phase-header">
+        <span class="phase-badge phase-4">Phase 4</span>
+        <div class="phase-title">Frontend S3 Deployment</div>
+      </div>
+
+      <div class="code-block" style="position:relative;">
+<button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<span class="cm"># Build React app with API URL baked in</span>
+echo "VITE_API_URL=https://p0zatmquc0.execute-api.us-east-1.amazonaws.com/prod" \
+  | Out-File .env.production -Encoding ASCII
+npm run build
+<span class="cm"># Output: 2213 modules transformed, 627 KB JS bundle, built in 6.02s</span>
+
+<span class="cm"># Create and configure S3 bucket</span>
+aws s3 mb s3://voltstream-frontend-764395350322 --region us-east-1
+aws s3api put-public-access-block --bucket voltstream-frontend-764395350322 \
+  --public-access-block-configuration "BlockPublicAcls=false,..."
+aws s3 website s3://voltstream-frontend-764395350322 \
+  --index-document index.html --error-document index.html
+aws s3api put-bucket-policy --bucket voltstream-frontend-764395350322 \
+  --policy file://bucket-policy.json
+
+<span class="cm"># Upload with correct cache headers</span>
+aws s3 sync dist s3://voltstream-frontend-764395350322 \
+  --delete --cache-control "max-age=31536000,public,immutable" --exclude "index.html"
+aws s3 cp dist\index.html s3://voltstream-frontend-764395350322/index.html \
+  --cache-control "no-cache,no-store,must-revalidate"
+      </div>
+    </section>
+
+    <!-- ── SECTION 07: MONITORING ── -->
+    <section class="section" id="monitoring">
+      <div class="section-header">
+        <div class="section-num">07</div>
+        <div class="section-title-wrap">
+          <div class="section-title">Monitoring — CloudWatch &amp; SNS</div>
+          <div class="section-desc">Alarms, email notifications, logs, and metrics</div>
+        </div>
+      </div>
+
+      <!-- Monitoring Architecture Flow -->
+      <div class="card-title" style="margin-bottom:16px;">Monitoring Architecture Flow</div>
+      <div class="mon-flow">
+        <div class="mon-step">
+          <div class="mon-step-icon" style="background:rgba(139,92,246,0.12);">λ</div>
+          <div><strong>Lambda Function executes</strong> <span style="color:var(--text3); font-size:12px; margin-left:8px;">voltstream-api handles request</span></div>
+        </div>
+        <div class="mon-arrow">↓</div>
+        <div class="mon-step">
+          <div class="mon-step-icon" style="background:rgba(245,158,11,0.12);">📊</div>
+          <div><strong>CloudWatch collects metrics</strong> <span style="color:var(--text3); font-size:12px; margin-left:8px;">every 60 seconds — Errors, Duration, Throttles, Invocations</span></div>
+        </div>
+        <div class="mon-arrow">↓</div>
+        <div class="mon-step">
+          <div class="mon-step-icon" style="background:rgba(0,153,255,0.12);">📐</div>
+          <div><strong>Alarm evaluates metric against threshold</strong> <span style="color:var(--text3); font-size:12px; margin-left:8px;">per evaluation period</span></div>
+        </div>
+        <div class="mon-arrow">↓ <span style="color:var(--red); font-size:11px;">[threshold breached]</span></div>
+        <div class="mon-step" style="border-color:rgba(239,68,68,0.2);">
+          <div class="mon-step-icon" style="background:rgba(239,68,68,0.12);">🚨</div>
+          <div><strong style="color:var(--red);">Alarm state changes: OK → ALARM</strong> <span style="color:var(--text3); font-size:12px; margin-left:8px;">publishes to SNS Topic: voltstream-alerts</span></div>
+        </div>
+        <div class="mon-arrow">↓</div>
+        <div class="mon-step">
+          <div class="mon-step-icon" style="background:rgba(239,68,68,0.12);">📧</div>
+          <div><strong>SNS delivers email alert</strong> <span style="color:var(--text3); font-size:12px; margin-left:8px;">to shivam4maths1729@gmail.com</span></div>
+        </div>
+        <div class="mon-arrow">↓ <span style="color:var(--green); font-size:11px;">[issue resolved]</span></div>
+        <div class="mon-step" style="border-color:rgba(0,212,170,0.2);">
+          <div class="mon-step-icon" style="background:rgba(0,212,170,0.12);">✅</div>
+          <div><strong style="color:var(--green);">Alarm state changes: ALARM → OK</strong> <span style="color:var(--text3); font-size:12px; margin-left:8px;">recovery email sent automatically</span></div>
+        </div>
+      </div>
+
+      <!-- SNS Setup -->
+      <div style="margin-top:28px;">
+        <div class="card-title">SNS Topic Setup</div>
+        <div class="grid-2">
+          <div>
+            <div class="code-label">Create Topic</div>
+            <div class="code-block" style="position:relative;">
+<button class="copy-btn" onclick="copyCode(this)">Copy</button>
+aws sns create-topic \
+  --name voltstream-alerts \
+  --region us-east-1
+
+<span class="cm"># Output:
+# "TopicArn": "arn:aws:sns:us-east-1:
+#   764395350322:voltstream-alerts"</span>
+            </div>
+          </div>
+          <div>
+            <div class="code-label">Subscribe Email</div>
+            <div class="code-block" style="position:relative;">
+<button class="copy-btn" onclick="copyCode(this)">Copy</button>
+aws sns subscribe \
+  --topic-arn arn:aws:sns:us-east-1:\
+764395350322:voltstream-alerts \
+  --protocol email \
+  --notification-endpoint \
+shivam4maths1729@gmail.com \
+  --region us-east-1
+            </div>
+          </div>
+        </div>
+        <div class="callout callout-info">
+          <div class="callout-icon">ℹ️</div>
+          <div class="callout-body">
+            <strong>Confirmation Required</strong>
+            After running the subscribe command, AWS sends a "Subscription Confirmation" email. The subscription is not active until the "Confirm subscription" link is clicked. Alarms will not send email notifications until this step is complete.
+          </div>
+        </div>
+      </div>
+
+      <!-- 3 Alarms -->
+      <div style="margin-top:28px;">
+        <div class="card-title" style="margin-bottom:16px;">The 3 CloudWatch Alarms</div>
+        <div class="alarm-card">
+          <div class="alarm-icon" style="background:rgba(0,212,170,0.1);">✅</div>
+          <div class="alarm-body">
+            <div class="alarm-title">VoltStream-Lambda-Errors</div>
+            <div class="alarm-meta">Metric: Errors (Sum) · Threshold: ≥ 5 errors · Period: 5 min · State: <span style="color:var(--green);">OK</span></div>
+            <div style="font-size:12px; color:var(--text3); margin-top:4px;">Detects Lambda function throwing unhandled exceptions — 500 errors</div>
+          </div>
+        </div>
+        <div class="alarm-card">
+          <div class="alarm-icon" style="background:rgba(245,158,11,0.1);">⏱️</div>
+          <div class="alarm-body">
+            <div class="alarm-title">VoltStream-Lambda-Duration</div>
+            <div class="alarm-meta">Metric: Duration (Avg) · Threshold: ≥ 3000ms · Period: 5 min · State: <span style="color:var(--yellow);">INSUFFICIENT_DATA</span></div>
+            <div style="font-size:12px; color:var(--text3); margin-top:4px;">Detects slow API responses — cold starts or heavy processing</div>
+          </div>
+        </div>
+        <div class="alarm-card">
+          <div class="alarm-icon" style="background:rgba(239,68,68,0.1);">🚫</div>
+          <div class="alarm-body">
+            <div class="alarm-title">VoltStream-Lambda-Throttles</div>
+            <div class="alarm-meta">Metric: Throttles (Sum) · Threshold: ≥ 1 throttle · Period: 1 min · State: <span style="color:var(--yellow);">INSUFFICIENT_DATA</span></div>
+            <div style="font-size:12px; color:var(--text3); margin-top:4px;">Detects Lambda hitting concurrency limit — too many parallel requests</div>
+          </div>
+        </div>
+        <div class="callout callout-info" style="margin-top:12px;">
+          <div class="callout-icon">ℹ️</div>
+          <div class="callout-body">
+            <strong>INSUFFICIENT_DATA is expected</strong>
+            Duration and Throttles alarms show this state because they need traffic to collect data points. After the Live Dashboard polls the API for a few minutes, all alarms transition to OK automatically.
+          </div>
+        </div>
+      </div>
+
+      <!-- CloudWatch Logs -->
+      <div style="margin-top:28px;">
+        <div class="card-title">CloudWatch Logs — Sample Entry</div>
+        <div class="code-block">
+START RequestId: dmSmyhopoAMEKYA= Version: $LATEST
+END RequestId: dmSmyhopoAMEKYA=
+REPORT RequestId: dmSmyhopoAMEKYA= <span class="cn">Duration: 45.32 ms</span>  Billed Duration: 46 ms
+  Memory Size: 256 MB  Max Memory Used: 87 MB
+        </div>
+        <div class="code-label">Stream live logs via CLI</div>
+        <div class="code-block" style="position:relative;">
+<button class="copy-btn" onclick="copyCode(this)">Copy</button>
+aws logs tail /aws/lambda/voltstream-api --follow --region us-east-1
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SECTION 08: LIVE SUMMARY ── -->
+    <section class="section" id="live-summary">
+      <div class="section-header">
+        <div class="section-num">08</div>
+        <div class="section-title-wrap">
+          <div class="section-title">Live Deployment Summary</div>
+          <div class="section-desc">All AWS resources and free tier cost estimate</div>
+        </div>
+      </div>
+
+      <table class="doc-table">
+        <thead><tr><th>Service</th><th>Resource Name / ID</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td>S3 Bucket</td><td><code>voltstream-deployments-764395350322</code></td><td>Lambda ZIP deployment packages</td></tr>
+          <tr><td>S3 Bucket</td><td><code>voltstream-frontend-764395350322</code></td><td>React static website hosting</td></tr>
+          <tr><td>IAM Role</td><td><code>voltstream-lambda-role</code></td><td>Lambda execution — CloudWatch logs only</td></tr>
+          <tr><td>Lambda Function</td><td><code>voltstream-api</code></td><td>FastAPI backend — python3.12, 256MB, 30s</td></tr>
+          <tr><td>API Gateway</td><td><code>voltstream-api-gateway (p0zatmquc0)</code></td><td>Public HTTPS API endpoint</td></tr>
+          <tr><td>API Gateway Stage</td><td><code>prod</code></td><td>Production stage — auto-deploy enabled</td></tr>
+          <tr><td>API Gateway Route</td><td><code>ANY /{proxy+} → integrations/atjzu0f</code></td><td>Catch-all route to Lambda</td></tr>
+          <tr><td>CloudWatch Logs</td><td><code>/aws/lambda/voltstream-api</code></td><td>All invocation logs and errors</td></tr>
+          <tr><td>CloudWatch Alarm</td><td><code>VoltStream-Lambda-Errors</code></td><td>Fires when errors ≥ 5 in 5 minutes</td></tr>
+          <tr><td>CloudWatch Alarm</td><td><code>VoltStream-Lambda-Duration</code></td><td>Fires when avg duration ≥ 3000ms</td></tr>
+          <tr><td>CloudWatch Alarm</td><td><code>VoltStream-Lambda-Throttles</code></td><td>Fires when any throttle occurs</td></tr>
+          <tr><td>SNS Topic</td><td><code>voltstream-alerts</code></td><td>Email notification channel</td></tr>
+          <tr><td>SNS Subscription</td><td><code>shivam4maths1729@gmail.com</code></td><td>Alert delivery — confirmed active</td></tr>
+        </tbody>
+      </table>
+
+      <div class="card-title" style="margin-top:24px; margin-bottom:16px;">Free Tier Cost Estimate</div>
+      <table class="doc-table">
+        <thead><tr><th>Service</th><th>Monthly Usage</th><th>Free Tier</th><th>Cost</th></tr></thead>
+        <tbody>
+          <tr><td>Lambda</td><td>~50K invocations</td><td>1M/month</td><td style="color:var(--green); font-family:var(--mono);">$0.00</td></tr>
+          <tr><td>API Gateway</td><td>~50K HTTP calls</td><td>1M/month</td><td style="color:var(--green); font-family:var(--mono);">$0.00</td></tr>
+          <tr><td>S3 Storage</td><td>~13 MB (frontend + ZIP)</td><td>5 GB/month</td><td style="color:var(--green); font-family:var(--mono);">$0.00</td></tr>
+          <tr><td>CloudWatch Logs</td><td>~50 MB log data</td><td>5 GB/month</td><td style="color:var(--green); font-family:var(--mono);">$0.00</td></tr>
+          <tr><td>CloudWatch Alarms</td><td>3 metric alarms</td><td>10 alarms free</td><td style="color:var(--green); font-family:var(--mono);">$0.00</td></tr>
+          <tr><td>SNS</td><td>~100 email notifications</td><td>1M/month</td><td style="color:var(--green); font-family:var(--mono);">$0.00</td></tr>
+        </tbody>
+      </table>
+      <div class="cost-total">
+        <div class="cost-total-label">Total Monthly Cost</div>
+        <div class="cost-total-val">$0.00</div>
+      </div>
+    </section>
+
+    <!-- ── SECTION 09: ISSUES ── -->
+    <section class="section" id="issues">
+      <div class="section-header">
+        <div class="section-num">09</div>
+        <div class="section-title-wrap">
+          <div class="section-title">Issues Encountered &amp; Resolutions</div>
+          <div class="section-desc">Every problem hit with root cause and fix</div>
+        </div>
+      </div>
+
+      <div class="issue-row">
+        <div class="issue-header">
+          <span style="font-size:18px;">🐍</span>
+          <div class="issue-title">Windows pip build — pydantic_core crash</div>
+        </div>
+        <div class="issue-grid">
+          <div><div class="issue-field-label">Symptom</div><div class="issue-field-val">"No module named pydantic_core._pydantic_core"</div></div>
+          <div><div class="issue-field-label">Root Cause</div><div class="issue-field-val">Windows .pyd binaries incompatible with Lambda Linux runtime</div></div>
+          <div><div class="issue-field-label">Resolution</div><div class="issue-field-val">Rebuilt inside AWS Lambda Docker image: <code>public.ecr.aws/lambda/python:3.12</code></div></div>
+        </div>
+      </div>
+
+      <div class="issue-row">
+        <div class="issue-header">
+          <span style="font-size:18px;">🔗</span>
+          <div class="issue-title">Stage prefix 404 — All endpoints returning Not Found</div>
+        </div>
+        <div class="issue-grid">
+          <div><div class="issue-field-label">Symptom</div><div class="issue-field-val">All endpoints returned <code>{"detail":"Not Found"}</code></div></div>
+          <div><div class="issue-field-label">Root Cause</div><div class="issue-field-val">API Gateway passes <code>/prod/api/v1/...</code> but FastAPI routes match <code>/api/v1/...</code></div></div>
+          <div><div class="issue-field-label">Resolution</div><div class="issue-field-val">Added <code>api_gateway_base_path="/prod"</code> to Mangum, then switched to custom <code>/docs</code> route</div></div>
+        </div>
+      </div>
+
+      <div class="issue-row">
+        <div class="issue-header">
+          <span style="font-size:18px;">📚</span>
+          <div class="issue-title">Swagger docs 404 — /openapi.json path mismatch</div>
+        </div>
+        <div class="issue-grid">
+          <div><div class="issue-field-label">Symptom</div><div class="issue-field-val">"Failed to load API definition — 404 /openapi.json"</div></div>
+          <div><div class="issue-field-label">Root Cause</div><div class="issue-field-val">Swagger UI fetches <code>/openapi.json</code> but endpoint is at <code>/prod/openapi.json</code></div></div>
+          <div><div class="issue-field-label">Resolution</div><div class="issue-field-val">Disabled default docs, created custom <code>/docs</code> route with <code>openapi_url="/prod/openapi.json"</code></div></div>
+        </div>
+      </div>
+
+      <div class="issue-row">
+        <div class="issue-header">
+          <span style="font-size:18px;">💻</span>
+          <div class="issue-title">PowerShell && syntax — token not valid</div>
+        </div>
+        <div class="issue-grid">
+          <div><div class="issue-field-label">Symptom</div><div class="issue-field-val">"The token && is not valid"</div></div>
+          <div><div class="issue-field-label">Root Cause</div><div class="issue-field-val">PowerShell does not support bash <code>&&</code> chaining syntax</div></div>
+          <div><div class="issue-field-label">Resolution</div><div class="issue-field-val">Ran each command on a separate line</div></div>
+        </div>
+      </div>
+
+      <div class="issue-row">
+        <div class="issue-header">
+          <span style="font-size:18px;">🐳</span>
+          <div class="issue-title">Docker not running — failed to connect to Docker API</div>
+        </div>
+        <div class="issue-grid">
+          <div><div class="issue-field-label">Symptom</div><div class="issue-field-val">"failed to connect to docker API"</div></div>
+          <div><div class="issue-field-label">Root Cause</div><div class="issue-field-val">Docker Desktop was not started</div></div>
+          <div><div class="issue-field-label">Resolution</div><div class="issue-field-val">Opened Docker Desktop and waited for whale icon in system tray</div></div>
+        </div>
+      </div>
+
+      <div class="issue-row">
+        <div class="issue-header">
+          <span style="font-size:18px;">🪣</span>
+          <div class="issue-title">Bucket name typo — NoSuchBucket error</div>
+        </div>
+        <div class="issue-grid">
+          <div><div class="issue-field-label">Symptom</div><div class="issue-field-val">"NoSuchBucket" error on S3 upload</div></div>
+          <div><div class="issue-field-label">Root Cause</div><div class="issue-field-val">Bucket name had _ID suffix appended accidentally</div></div>
+          <div><div class="issue-field-label">Resolution</div><div class="issue-field-val">Corrected to <code>voltstream-deployments-764395350322</code></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SECTION 10: RUNBOOK ── -->
+    <section class="section" id="runbook">
+      <div class="section-header">
+        <div class="section-num">10</div>
+        <div class="section-title-wrap">
+          <div class="section-title">Redeployment Runbook</div>
+          <div class="section-desc">Exact commands to update the app after any change</div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab(this, 'backend-tab')">Backend Changes</div>
+        <div class="tab" onclick="switchTab(this, 'frontend-tab')">Frontend Changes</div>
+        <div class="tab" onclick="switchTab(this, 'ops-tab')">Ops Commands</div>
+      </div>
+
+      <div id="backend-tab" class="tab-pane active">
+        <div class="code-label">Redeploy Backend (After Python Changes)</div>
+        <div class="code-block" style="position:relative;">
+<button class="copy-btn" onclick="copyCode(this)">Copy</button>
+cd backend
+Remove-Item -Recurse -Force package
+mkdir package
+
+docker run --rm -v ${PWD}:/var/task --entrypoint /bin/sh \
+  public.ecr.aws/lambda/python:3.12 \
+  -c "pip install -r requirements.txt -t package"
+
+copy main.py package\
+copy lambda_handler.py package\
+cd package
+Compress-Archive -Path * -DestinationPath ..\lambda_package_fixed.zip -Force
+cd ..
+
+aws s3 cp lambda_package_fixed.zip \
+  s3://voltstream-deployments-764395350322/lambda_package_fixed.zip
+
+aws lambda update-function-code \
+  --function-name voltstream-api \
+  --s3-bucket voltstream-deployments-764395350322 \
+  --s3-key lambda_package_fixed.zip \
+  --region us-east-1
+
+Start-Sleep -Seconds 15
+
+<span class="cm"># Verify the update</span>
+curl -UseBasicParsing \
+  https://p0zatmquc0.execute-api.us-east-1.amazonaws.com/prod/api/v1/dashboard/live
+        </div>
+      </div>
+
+      <div id="frontend-tab" class="tab-pane">
+        <div class="code-label">Redeploy Frontend (After React Changes)</div>
+        <div class="code-block" style="position:relative;">
+<button class="copy-btn" onclick="copyCode(this)">Copy</button>
+cd frontend
+npm run build
+
+<span class="cm"># Upload JS/CSS with long-lived cache (hashed filenames)</span>
+aws s3 sync dist s3://voltstream-frontend-764395350322 \
+  --delete \
+  --cache-control "max-age=31536000,public,immutable" \
+  --exclude "index.html"
+
+<span class="cm"># Upload index.html with no-cache (always fresh)</span>
+aws s3 cp dist\index.html s3://voltstream-frontend-764395350322/index.html \
+  --cache-control "no-cache,no-store,must-revalidate"
+
+<span class="cm"># Hard refresh browser: Ctrl + Shift + R</span>
+        </div>
+      </div>
+
+      <div id="ops-tab" class="tab-pane">
+        <div class="code-label">Check Alarm Status</div>
+        <div class="code-block" style="position:relative;">
+<button class="copy-btn" onclick="copyCode(this)">Copy</button>
+aws cloudwatch describe-alarms \
+  --alarm-names "VoltStream-Lambda-Errors" \
+                "VoltStream-Lambda-Duration" \
+                "VoltStream-Lambda-Throttles" \
+  --region us-east-1 \
+  --query "MetricAlarms[].{Name:AlarmName,State:StateValue}" \
+  --output table
+        </div>
+        <div class="code-label">Stream Live Logs</div>
+        <div class="code-block" style="position:relative;">
+<button class="copy-btn" onclick="copyCode(this)">Copy</button>
+aws logs tail /aws/lambda/voltstream-api --follow --region us-east-1
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SECTION 11: DEMO GUIDE ── -->
+    <section class="section" id="demo">
+      <div class="section-header">
+        <div class="section-num">11</div>
+        <div class="section-title-wrap">
+          <div class="section-title">Week 1 Checkpoint &amp; Demo Guide</div>
+          <div class="section-desc">Checklist and step-by-step demo script for mentor session</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <div class="card-title" style="margin-bottom:16px;">Checkpoint Checklist</div>
+          <div class="checklist-item">
+            <div class="check-icon check-done">✓</div>
+            <div><div class="check-label">FastAPI backend deployed to Lambda</div><div class="check-detail">aws lambda list-functions — voltstream-api Active</div></div>
+          </div>
+          <div class="checklist-item">
+            <div class="check-icon check-done">✓</div>
+            <div><div class="check-label">All 5 endpoints return 200 OK</div><div class="check-detail">curl -UseBasicParsing — all verified live</div></div>
+          </div>
+          <div class="checklist-item">
+            <div class="check-icon check-done">✓</div>
+            <div><div class="check-label">API docs at /prod/docs</div><div class="check-detail">Browser opens Swagger UI with all endpoints</div></div>
+          </div>
+          <div class="checklist-item">
+            <div class="check-icon check-done">✓</div>
+            <div><div class="check-label">React frontend deployed on S3</div><div class="check-detail">S3 website URL loads full VoltStream app</div></div>
+          </div>
+          <div class="checklist-item">
+            <div class="check-icon check-done">✓</div>
+            <div><div class="check-label">Frontend connected to Lambda API</div><div class="check-detail">Live Dashboard polls every 4s with real data</div></div>
+          </div>
+          <div class="checklist-item">
+            <div class="check-icon check-done">✓</div>
+            <div><div class="check-label">CloudWatch logs visible</div><div class="check-detail">/aws/lambda/voltstream-api log group active</div></div>
+          </div>
+          <div class="checklist-item">
+            <div class="check-icon check-done">✓</div>
+            <div><div class="check-label">CloudWatch alarms configured</div><div class="check-detail">3 alarms — Errors (OK), Duration, Throttles</div></div>
+          </div>
+          <div class="checklist-item">
+            <div class="check-icon check-done">✓</div>
+            <div><div class="check-label">SNS email alerts configured</div><div class="check-detail">shivam4maths1729@gmail.com — confirmed</div></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card-title" style="margin-bottom:16px;">Demo Script</div>
+          <div class="demo-step">
+            <div class="demo-num">1</div>
+            <div class="demo-text"><strong>Open two browser tabs</strong> — Tab 1: Frontend app, Tab 2: API docs</div>
+          </div>
+          <div class="demo-step">
+            <div class="demo-num">2</div>
+            <div class="demo-text"><strong>Tab 1:</strong> Show Live Dashboard — gauges updating every 4s, status badge changing, sparkline building</div>
+          </div>
+          <div class="demo-step">
+            <div class="demo-num">3</div>
+            <div class="demo-text"><strong>Tab 1:</strong> Navigate through all 4 pages — Analytics, Smart Control, Billing</div>
+          </div>
+          <div class="demo-step">
+            <div class="demo-num">4</div>
+            <div class="demo-text"><strong>Tab 2:</strong> Open /prod/docs — show all 5 endpoints in Swagger UI</div>
+          </div>
+          <div class="demo-step">
+            <div class="demo-num">5</div>
+            <div class="demo-text"><strong>Tab 2:</strong> Expand GET /api/v1/dashboard/live → Try it out → Execute → show live JSON</div>
+          </div>
+          <div class="demo-step">
+            <div class="demo-num">6</div>
+            <div class="demo-text"><strong>Tab 2:</strong> PATCH /api/v1/devices/{id} → id: d001, body: <code>{"is_on": false}</code> → Execute</div>
+          </div>
+          <div class="demo-step">
+            <div class="demo-num">7</div>
+            <div class="demo-text"><strong>AWS Console:</strong> CloudWatch → Alarms — show all 3 alarms with current state</div>
+          </div>
+          <div class="demo-step">
+            <div class="demo-num">8</div>
+            <div class="demo-text"><strong>AWS Console:</strong> CloudWatch → Log Groups → /aws/lambda/voltstream-api → show recent logs</div>
+          </div>
+          <div class="demo-step">
+            <div class="demo-num">9</div>
+            <div class="demo-text"><strong>Gmail inbox:</strong> point out the SNS subscription confirmation email</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Key Challenge -->
+      <div class="callout callout-info" style="margin-top:28px;">
+        <div class="callout-icon">💡</div>
+        <div class="callout-body">
+          <strong>Key Challenge to Explain to Mentor</strong>
+          "Windows pip builds crash on Lambda Linux runtime — fixed by rebuilding inside the AWS Lambda Docker image. The /docs fix required custom routes because API Gateway stage prefix /prod was not being stripped correctly by the default Mangum configuration."
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div style="margin-top:48px; padding-top:28px; border-top:1px solid var(--border); text-align:center;">
+        <div style="font-family:var(--display); font-size:18px; font-weight:700; margin-bottom:6px;">
+          <span style="color:var(--green);">Volt</span>Stream — Week 1 Complete ✅
+        </div>
+        <div style="font-size:12px; color:var(--text3); font-family:var(--mono);">
+          Prepared by Shivam Kumar · AI/ML Trainee · Tachyon Technologies · Hyderabad · 17 May 2026
+        </div>
+        <div style="font-size:11px; color:var(--text3); margin-top:6px; font-family:var(--mono);">
+          Tachyon AIML Internship — AWS Track — Confidential
+        </div>
+      </div>
+    </section>
+
+  </div><!-- /content -->
+</main>
+
+<script>
+// Sidebar active link
+const links = document.querySelectorAll('.nav-link');
+const sections = document.querySelectorAll('section[id]');
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(l => {
+        l.classList.toggle('active', l.getAttribute('href') === '#' + e.target.id);
+      });
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+
+sections.forEach(s => observer.observe(s));
+
+// Tabs
+function switchTab(tabEl, paneId) {
+  const container = tabEl.closest('.section') || document.body;
+  container.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  container.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  tabEl.classList.add('active');
+  document.getElementById(paneId).classList.add('active');
+}
+
+// Copy code
+function copyCode(btn) {
+  const block = btn.closest('.code-block');
+  const text = block.innerText.replace('Copy\n', '').replace('Copied!\n', '');
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+  });
+}
+</script>
+</body>
+</html>

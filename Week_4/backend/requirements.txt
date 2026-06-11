@@ -1,0 +1,16 @@
+# ── Core ──────────────────────────────────────────────────────────────────────
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+pydantic==2.10.3
+mangum==0.19.0
+python-dotenv==1.0.1
+
+# ── Week 3: RAG stack ─────────────────────────────────────────────────────────
+openai==1.82.0
+chromadb==0.6.3
+pypdf==5.5.0
+langsmith==0.3.45
+
+# ── Week 4: Agentic AI — Strands Agents + LiteLLM ─────────────────────────────
+strands-agents==0.1.6          # AWS Strands Agents SDK
+litellm==1.51.3                # LiteLLM bridges Strands → OpenAI API
